@@ -1,0 +1,1 @@
+# pact-openapi-core
