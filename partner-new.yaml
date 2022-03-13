@@ -1,0 +1,805 @@
+openapi: 3.0.0
+info:
+  description: Partner domain APIs v1
+  title: Partner v1 entities
+  version: 'v1beta'
+  contact:
+    name: "Partner Core Domain Team"
+    email: "tbd@expedia.com"
+    url: "https://go/partner-domain"
+  x-eg-lifecycle: "PLANNED"
+  x-eg-tags: ["partner"]
+servers:
+  - url: https://tools.us-west-2.test.customer-experience.expediagroup.com/partner
+    description: Test
+paths:
+  /v1/partners:
+    get:
+      tags:
+        - Partner
+      summary: Search partners
+      description: Search partners by name
+      operationId: searchPartners
+      parameters:
+        - name: name
+          in: query
+          required: false
+          example: The Expedia Test Partner One
+          schema:
+            type: string
+        - name: exact_match
+          in: query
+          required: false
+          example: true
+          schema:
+            type: boolean
+            default: false
+        - name: status
+          in: query
+          required: false
+          example: ACTIVE
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - DELETED
+            default: []
+
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 100
+        - name: page_token
+          in: query
+          required: false
+          example: 1
+          schema:
+            type: string
+            default: ""
+      responses:
+        "200":
+          description: Partner results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResults'
+      security:
+        - eg_auth:
+            - partner.partner.read
+    post:
+      tags:
+        - Partner
+      summary: Create new partner
+      description: Account will also be created for root partner (parent_partner_id=null)
+      operationId: createPartner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Partner'
+        required: true
+      responses:
+        "201":
+          description: Partner is created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerHierarchy'
+        "404":
+          description: Parent partner is not found
+      security:
+        - eg_auth:
+            - partner.partner.create
+  /v1/partners/{partner_id}:
+    get:
+      tags:
+        - Partner
+      summary: Get partner
+      description: Get partner by ID and status
+      operationId: findPartner
+      parameters:
+        - name: partner_id
+          in: path
+          required: true
+          example: b00841d8-6034-4526-97dc-ddbe1d97a953
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          example: ACTIVE
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - DELETED
+            default: []
+      responses:
+        "200":
+          description: Partner is found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        "404":
+          description: Partner is not found
+      security:
+        - eg_auth:
+            - partner.partner.read
+    delete:
+      tags:
+        - Partner
+      summary: Delete partner
+      description: "Change status of the partner, its children and accounts to DELETED"
+      operationId: deletePartner
+      parameters:
+        - name: partner_id
+          in: path
+          required: true
+          example: 864b0854-3864-4f8c-848b-859c5ddcf1e0
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Partner is deleted
+        "404":
+          description: Partner is not found
+      security:
+        - eg_auth:
+            - partner.partner.delete
+    patch:
+      tags:
+        - Partner
+      summary: Update partner
+      description: Update partner by ID
+      operationId: updatePartner
+      parameters:
+        - name: partner_id
+          in: path
+          required: true
+          example: b00841d8-6034-4526-97dc-ddbe1d97a953
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Partner'
+        required: true
+      responses:
+        "200":
+          description: Partner is updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        "404":
+          description: Partner is not found
+      security:
+        - eg_auth:
+            - partner.partner.update
+  /v1/partners/{partner_id}/hierarchy:
+    get:
+      tags:
+        - Partner
+      summary: Get partner hierarchy and accounts
+      description: Get partner hierarchy and accounts by ID
+      operationId: findPartnerHierarchy
+      parameters:
+        - name: partner_id
+          in: path
+          required: true
+          example: b00841d8-6034-4526-97dc-ddbe1d97a953
+          schema:
+            type: string
+        - name: children
+          in: query
+          required: false
+          example: true
+          schema:
+            type: boolean
+            default: false
+        - name: status
+          in: query
+          required: false
+          example: ACTIVE
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - DELETED
+            default: []
+        - name: max_depth
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: integer
+            format: int32
+            default: 10
+      responses:
+        "200":
+          description: Partner is found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerHierarchy'
+        "404":
+          description: Partner is not found
+      security:
+        - eg_auth:
+            - partner.partner.read
+            - partner.partner-account.read
+  /v1/accounts:
+    get:
+      tags:
+        - Account
+      summary: Search accounts by number
+      operationId: findByAccountNumber
+      parameters:
+        - name: number
+          in: query
+          required: true
+          example: 4380627797
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          example: ACTIVE
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - DELETED
+            default: []
+      responses:
+        default:
+          description: default response
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+      security:
+        - eg_auth: []
+    post:
+      tags:
+        - Account
+      summary: Create new account
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+        required: true
+      responses:
+        "201":
+          description: Account is created
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Account'
+        "404":
+          description: Partner is not found
+      security:
+        - eg_auth: []
+  /v1/accounts/{account_id}:
+    get:
+      tags:
+        - Account
+      summary: Get account by id
+      operationId: findByAccountId
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          example: 44ba7566-38f3-4488-b439-1e5a16ea1a63
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          example: ACTIVE
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - DELETED
+            default: []
+      responses:
+        "404":
+          description: Account is not found
+        "200":
+          description: Account is found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Account'
+      security:
+        - eg_auth: []
+    delete:
+      tags:
+        - Account
+      summary: Delete account
+      description: Change status of the account to DELETED
+      operationId: delete
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          example: 7fbeccc4-83f9-463d-a2ff-99af0bf9d747
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account is deleted
+        "404":
+          description: Account is not found
+      security:
+        - eg_auth: []
+  /v1/partners/{partner_id}/accounts:
+    get:
+      tags:
+        - Account
+      operationId: findByPartnerId_1
+      parameters:
+        - name: partner_id
+          in: path
+          required: true
+          example: b00841d8-6034-4526-97dc-ddbe1d97a953
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          example: ACTIVE
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ACTIVE
+                - INACTIVE
+                - DELETED
+            default: []
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+      security:
+        - eg_auth: []
+  /v1/users/accounts:
+    get:
+      tags:
+        - User
+      summary: Get user accounts
+      description: Get user accounts
+      operationId: getUserAccounts
+      responses:
+        "200":
+          description: User account results
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserAccountInfo'
+      security:
+        - eg_auth:
+            - control-plane.partner-account.read
+    put:
+      tags:
+        - User
+      summary: Grant user role to account
+      description: Grant user role to account
+      operationId: addUserAccount
+      deprecated: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAccount'
+        required: true
+      responses:
+        "200":
+          description: Relation is added
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/UserAccount'
+      security:
+        - eg_auth:
+            - control-plane.partner-account.update
+components:
+  schemas:
+    Address:
+      required:
+        - city
+        - country
+        - line1
+        - state
+      type: object
+      properties:
+        line1:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: line1
+        line2:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: line2
+        line3:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: line3
+        city:
+          maxLength: 100
+          minLength: 0
+          type: string
+          example: Atlanta
+        state:
+          maxLength: 100
+          minLength: 0
+          type: string
+          example: AT
+        country:
+          maxLength: 100
+          minLength: 0
+          type: string
+          example: USA
+        postal_code:
+          maxLength: 100
+          minLength: 0
+          type: string
+          example: 232343
+    Contact:
+      type: object
+      properties:
+        name:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: Name
+        email:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: email@example.com
+        addresses:
+          maxItems: 100
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        phones:
+          maxItems: 100
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+    Partner:
+      required:
+        - name
+      type: object
+      properties:
+        partner_id:
+          type: string
+          readOnly: true
+          example: 0a1ea7ec-d847-441e-8db6-b60b524f2999
+        name:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: The Expedia Partner
+        type:
+          type: string
+          example: ORGANIZATION
+          enum:
+            - ORGANIZATION
+            - INDIVIDUAL
+        status:
+          type: string
+          example: ACTIVE
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - DELETED
+        parent_partner_id:
+          type: string
+          example: 50030eeb-dfb1-49e7-8b8d-a6b8421697d1
+        interests:
+          maxItems: 100
+          minItems: 0
+          type: array
+          example: SUPPLY
+          items:
+            type: string
+            example: SUPPLY
+            enum:
+              - SUPPLY
+              - TRAVEL_STORE
+        contacts:
+          maxItems: 10
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        email:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: email@example.com
+        website:
+          maxLength: 500
+          minLength: 0
+          type: string
+        addresses:
+          maxItems: 10
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        phones:
+          maxItems: 10
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+        updated_date:
+          type: string
+          format: string
+          pattern: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+          example: "2021-07-23T05:02:42.619Z"
+          readOnly: true
+        updated_user:
+          type: string
+          readOnly: true
+    Phone:
+      required:
+        - number
+      type: object
+      properties:
+        number:
+          maxLength: 100
+          minLength: 0
+          type: string
+          example: (001) 222-333-444
+        type:
+          type: string
+          example: WORK
+          enum:
+            - WORK
+            - HOME
+            - MOBILE
+    Account:
+      required:
+        - name
+      type: object
+      properties:
+        account_id:
+          type: string
+          readOnly: true
+          example: 28541c06-06c0-4dc1-b048-56f31b349666
+        name:
+          maxLength: 500
+          minLength: 0
+          type: string
+        number:
+          type: string
+          readOnly: true
+          example: 4380627797
+        status:
+          type: string
+          example: ACTIVE
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - DELETED
+        partner_id:
+          type: string
+          example: b00841d8-6034-4526-97dc-ddbe1d97a953
+        type:
+          type: string
+          example: ignore
+          enum:
+            - ROOT
+            - USER
+        updated_date:
+          type: string
+          format: string
+          pattern: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+          example: "2021-07-23T05:02:42.619Z"
+          readOnly: true
+        updated_user:
+          type: string
+          readOnly: true
+    PartnerHierarchy:
+      required:
+        - accounts
+        - hierarchy
+      type: object
+      properties:
+        partner_id:
+          type: string
+          readOnly: true
+          example: 0a1ea7ec-d847-441e-8db6-b60b524f23a7
+        name:
+          maxLength: 500
+          minLength: 0
+          type: string
+        type:
+          type: string
+          enum:
+            - ORGANIZATION
+            - INDIVIDUAL
+        status:
+          type: string
+          example: ACTIVE
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - DELETED
+        parent_partner_id:
+          type: string
+          example: 50030eeb-dfb1-49e7-8b8d-a6b8421697d1
+        interests:
+          maxItems: 100
+          minItems: 0
+          type: array
+          example: SUPPLY
+          items:
+            type: string
+            example: SUPPLY
+            enum:
+              - SUPPLY
+              - TRAVEL_STORE
+        contacts:
+          maxItems: 10
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        email:
+          maxLength: 500
+          minLength: 0
+          type: string
+          example: email@example.com
+        website:
+          maxLength: 500
+          minLength: 0
+          type: string
+        addresses:
+          maxItems: 10
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        phones:
+          maxItems: 10
+          minItems: 0
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+        updated_date:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_user:
+          type: string
+          readOnly: true
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+        hierarchy:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerHierarchy'
+    UserAccount:
+      required:
+        - account_id
+        - role_id
+        - user_id
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: user
+        role_id:
+          type: string
+          example: administrator
+        account_id:
+          type: string
+          example: 44ba7566-38f3-4488-b439-1e5a16ea1a63
+    UserAccountInfo:
+      required:
+        - account_id
+        - account_name
+        - partner_id
+        - partner_name
+        - role_id
+        - user_id
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: user
+        role_id:
+          type: string
+          example: administrator
+        account_id:
+          type: string
+          example: 28541c06-06c0-4dc1-b048-56f31b349687
+        account_name:
+          type: string
+          example: Partner1
+        partner_id:
+          type: string
+          example: 0a1ea7ec-d847-441e-8db6-b60b524f23a9
+        partner_name:
+          type: string
+          example: Partner1
+    PartnerResults:
+      required:
+        - next_page_token
+        - page_size
+        - results
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Partner'
+        page_size:
+          type: integer
+          format: int32
+          example: 10
+        next_page_token:
+          type: string
+  securitySchemes:
+    eg_auth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token?grant_type=client_credentials
+          scopes:
+            partner.clients.create: Create a client of the Partner domain
+            partner.clients-onboarding-workflow.create: Create an onboarding workflow
+            partner.clients-creation-requirements.create: Define the partner creation data requirements
+            partner.clients-notification-preferences.create: Define the partner creation data requirements
+            partner.clients-config-schema.create: Define the partner configuration schema
+            partner.partners.create: Create a partner
+            partner.partners.read: Read all partners
+            partner.partners-accounts.create: Create a partner account to organize access controls and configurations at a more granular level
+            partner.partners-accounts.read: Read partner accounts for a partner
+            partner.partners-account-capabilities.read: Get all capabilities that the partner account has signed up for
+

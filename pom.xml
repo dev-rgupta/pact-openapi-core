@@ -1,0 +1,138 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.expediagroup</groupId>
+	<artifactId>pact-core</artifactId>
+	<version>0.0.9-SNAPSHOT</version>
+	<name>pact-core</name>
+	<description>Creation of Pact From OpenAPI </description>
+	<packaging>jar</packaging>
+	<properties>
+		<java.version>1.8</java.version>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+	<scm>
+		<connection>scm:git:git@github.expedia.biz:eg-platform-test-automation/pact-openapi-core.git</connection>
+		<developerConnection>scm:git:git@github.expedia.biz:eg-platform-test-automation/pact-openapi-core.git</developerConnection>
+		<url>scm:git:git@github.expedia.biz:eg-platform-test-automation/pact-openapi-core.git</url>
+		<tag>pact-core</tag>
+	</scm>
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.20</version>
+			<scope>provided</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/io.swagger.parser.v3/swagger-parser -->
+		<dependency>
+			<groupId>io.swagger.parser.v3</groupId>
+			<artifactId>swagger-parser</artifactId>
+			<version>2.0.25</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/uk.co.jemos.podam/podam -->
+		<dependency>
+			<groupId>uk.co.jemos.podam</groupId>
+			<artifactId>podam</artifactId>
+			<version>7.2.6.RELEASE</version>
+		</dependency>
+
+		<!--<dependency>
+			<groupId>au.com.dius</groupId>
+			<artifactId>pact-jvm-consumer-junit</artifactId>
+			<version>4.0.9</version>
+		</dependency>
+		<dependency>
+			<groupId>au.com.dius</groupId>
+			<artifactId>pact-jvm-consumer-java8</artifactId>
+			<version>4.0.9</version>
+		</dependency>-->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.6.4</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.3.0</version>
+				<configuration>
+					<doclint>none</doclint>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+			<!--pact broker plugin-->
+			<plugin>
+				<!--publish newly generated file to pact broker after each successful build-->
+				<groupId>au.com.dius.pact.provider</groupId>
+				<artifactId>maven</artifactId>
+				<version>4.1.11</version>
+				<configuration>
+					<reports>
+						<report>console</report>
+						<report>json</report>
+						<report>markdown</report>
+					</reports>
+					<pactBrokerUrl>${pactBrokerUrl}</pactBrokerUrl><!--http://10.38.98.32:8080/-->
+					<!-- <pactBrokerToken>QoXeUwD8k5OENElS5EuDiA</pactBrokerToken>
+                         <pactBrokerAuthenticationScheme>Bearer</pactBrokerAuthenticationScheme>-->
+
+					<!--validate pact against provider api's-->
+					<serviceProviders>
+						<serviceProvider>
+							<name>${providerName}</name>
+							<!--<protocol>https</protocol>
+							<host>${pact.host}</host>
+							<port>${pact.port}</port>
+							<path>/partner</path>-->
+							<stateChangeUrl>${stateChangeUrl}</stateChangeUrl> <!--http://localhost:9090/v1/pactStateChange-->
+						</serviceProvider>
+					</serviceProviders>
+					<configuration>
+						<pact.showStacktrace>true</pact.showStacktrace>
+						<pact.verifier.publishResults>true</pact.verifier.publishResults>
+						<pact.check_for_potential_duplicate_pacticipant_names>false</pact.check_for_potential_duplicate_pacticipant_names>
+					</configuration>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<distributionManagement>
+		<repository>
+			<id>releases</id>
+			<name>Internal Releases</name>
+			<url>https://artylab.expedia.biz/bexg-maven-release-local/</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>Internal Snapshots</name>
+			<url>https://artylab.expedia.biz/bexg-maven-snapshot-local/</url>
+		</snapshotRepository>
+	</distributionManagement>
+</project>

@@ -1,0 +1,1613 @@
+openapi: 3.0.0
+info:
+  title: "Product Catalog"
+  description: API For Exemplar Capability to demonstrate integration with Platform Control Plane
+  version: 'v1beta'
+  contact:
+    name: Product Catalog team
+    email: eg-product-catalog@expedia.com
+    url: "#ask-control-plane-catalog"
+  x-eg-lifecycle: "PLANNED"
+  x-eg-api-tags: [ "platform-control-plane" ]
+servers:
+  - url: https://platform-product-catalog.rcp.controlplane.test.exp-aws.net
+  - url: https://platform-product-catalog.rcp.controlplane.prod.exp-aws.net
+  - url: http://localhost:8080
+paths:
+  /v1beta/groups:
+    get:
+      summary: Find product groups
+      tags:
+        - Groups
+      operationId: findGroups
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.read
+      parameters:
+        - name: name
+          in: query
+          description: Only return groups with the provided name.
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of items to return.
+          required: false
+          schema:
+            type: number
+        - name: page_token
+          in: query
+          description: |
+            Location where to start retrieving the page. Should be used only when the limit parameter is defined.
+            When the limit is defined the response includes next_page_token that can be passed as page_token to retrive the next page.
+            When the limit is defined this endpoint also includes convenience attributes previous_page_url and next_page_url in the response
+            for direct access to the previous and next page if they exist.
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductGroupResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /v1beta/groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a product group
+      tags:
+        - Groups
+      operationId: findGroupById
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductGroup"
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Create or update a product group
+      tags:
+        - Groups
+      operationId: replaceGroup
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.write
+      parameters:
+        - name: dry_run
+          in: query
+          description: Validates the request but does not propagate any changes
+          required: false
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductGroupRequest'
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductGroup'
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductGroup'
+        "204":
+          description: No Content (Dry Run Successful)
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete a product group
+      tags:
+        - Groups
+      operationId: deleteGroup
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.admin
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /v1beta/products:
+    get:
+      summary: Find products
+      tags:
+        - Products
+      operationId: findProducts
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.read
+      parameters:
+        - name: owner
+          in: query
+          description: Only return products owned by the provided group id.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: status
+          in: query
+          description: Only return products with the provided status.
+          required: false
+          schema:
+            $ref: '#/components/schemas/ProductStatus'
+        - name: include
+          in: query
+          description: |
+            Include detailed information.
+            Supported values:
+              * owner: Decorates the response's <i>owner</i> field containing ProductGroup atributes.
+              * components: Decorates the response's <i>components</i> field with a full component payload.
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ProductsIncludeType'
+          style: form
+          explode: true
+        - name: component_id
+          in: query
+          description: Provide component ids, and only return products who use components with any of the ids.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: limit
+          in: query
+          description: Maximum number of items to return.
+          required: false
+          schema:
+            type: number
+        - name: page_token
+          in: query
+          description: |
+            Location where to start retrieving the page. Should be used only when the limit parameter is defined.
+            When the limit is defined the response includes next_page_token that can be passed as page_token to retrive the next page.
+            When the limit is defined this endpoint also includes convenience attributes previous_page_url and next_page_url in the response
+            for direct access to the previous and next page if they exist.
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /v1beta/products/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: include
+        in: query
+        description: |
+          Include detailed information.
+          Supported values:
+              * owner: Decorates the responses <i>owner</i> field containing ProductGroup atributes.
+              * components: Decorates the response's <i>components</i> field with a full component payload.
+        required: false
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductsIncludeType'
+        style: form
+        explode: true
+    get:
+      summary: Get a product
+      tags:
+        - Products
+      operationId: findProductById
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Create or update a product
+      tags:
+        - Products
+      operationId: replaceProduct
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.write
+      parameters:
+        - name: dry_run
+          in: query
+          description: Validates the request but does not propagate any changes
+          required: false
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        "204":
+          description: No Content (Dry Run Successful)
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete a product
+      tags:
+        - Products
+      operationId: deleteProduct
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.admin
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /v1beta/components:
+    get:
+      summary: Find product components
+      tags:
+        - Components
+      operationId: findComponents
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.read
+      parameters:
+        - name: type
+          in: query
+          description: Only return components with the provided type.
+          required: false
+          schema:
+            $ref: '#/components/schemas/ComponentType'
+        - name: include
+          in: query
+          description: |
+            Include detailed information as ProductComponentResponseWithDetails schema.
+            Supported values:
+              * configuration: Decorates the response with configuration schema for each configuration.
+              * api_policy: Decorates the response with the API Policy details.
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ComponentIncludeType'
+          style: form
+          explode: true
+        - name: limit
+          in: query
+          description: Maximum number of items to return.
+          required: false
+          schema:
+            type: number
+        - name: page_token
+          in: query
+          description: |
+            Location where to start retrieving the page. Should be used only when the limit parameter is defined.
+            When the limit is defined the response includes next_page_token that can be passed as page_token to retrive the next page.
+            When the limit is defined this endpoint also includes convenience attributes previous_page_url and next_page_url in the response
+            for direct access to the previous and next page if they exist.
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ProductComponentResponse'
+                  - $ref: '#/components/schemas/ProductComponentResponseWithDetails'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /v1beta/components/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: include
+        in: query
+        description: |
+          Include detailed information as ProductComponentResponseWithDetails schema.
+          Supported values:
+            * configuration: Decorates the response with configuration schema for each configuration.
+            * api_policy: Decorates the response with the API Policy details.
+        required: false
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentIncludeType'
+        style: form
+        explode: true
+    get:
+      summary: Get a product component
+      tags:
+        - Components
+      operationId: findComponentById
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ProductComponent'
+                  - $ref: '#/components/schemas/ProductComponentWithConfiguration'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Create or update a product component
+      tags:
+        - Components
+      operationId: replaceComponent
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.write
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dry_run
+          in: query
+          description: Validates the request but does not propagate any changes
+          required: false
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductComponentRequest'
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductComponent'
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductComponent'
+        "204":
+          description: No Content (Dry Run Successful)
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete a product component
+      tags:
+        - Components
+      operationId: deleteComponent
+      security:
+        - EgTokenAuth:
+            - control-plane.product-catalog.admin
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+components:
+  schemas:
+    include:
+      description: |
+        Include detailed information.
+        * configuration: Decorates the response with configuration schema for each configuration.
+        * api_policy: Decorates the response with the API Policy details.
+        ```
+        /components?include=configuration,api_policy
+        ```
+    ProductGroup:
+      required:
+        - id
+        - name
+        - administrator_account_id
+      type: object
+      properties:
+        id:
+          type: string
+          example: "102.0"
+        name:
+          type: string
+          example: "Cars"
+        configuration:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigurationTypeIdentifier'
+        administrator_account_id:
+          type: string
+          example: "6555ca0d-b53b-4f70-8201-267f5b1204a3"
+        metadata:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+    ProductGroupResponse:
+      required:
+        - items
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductGroup'
+        next_page_token:
+          type: string
+          example: "20"
+        page_size:
+          type: number
+          example: 10
+        total_elements:
+          type: number
+          example: 10
+        next_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/groups?limit=10&page_token=20"
+        previous_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/groups?limit=10&page_token=10"
+    ProductGroupRequest:
+      required:
+        - id
+        - name
+        - administrator_account_id
+      type: object
+      properties:
+        id:
+          type: string
+          example: "102.0"
+        name:
+          type: string
+          example: "Cars"
+        configuration:
+          type: array
+          description: Related Configurations for this group.
+          items:
+            $ref: '#/components/schemas/DomainConfigurationType'
+        administrator_account_id:
+          type: string
+          example: "6555ca0d-b53b-4f70-8201-267f5b1204a3"
+    ProductGroupIdentifier:
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          type: string
+          example: "102.0"
+    ProductRequest:
+      required:
+        - id
+        - owner
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          example: "102.04"
+        owner:
+          type: string
+          example: "102.0"
+        name:
+          type: string
+          example: "Exemplar"
+        description:
+          type: string
+          example: This is an example Product.
+          description: The description of the Product
+        long_description:
+          type: string
+          example: This product is an example Product that can be used as a basis for creating other Products.
+          description: The long description of the Product that supports markdown.
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        labels:
+          type: array
+          items:
+            type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "102.04-search"
+              type:
+                $ref: '#/components/schemas/ComponentType'
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityScope'
+        configurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigurationType'
+        selection:
+          $ref: '#/components/schemas/Selection'
+        externalization:
+          $ref: '#/components/schemas/ExternalizationOptions'
+        pricing:
+          type: object
+        additional_attributes:
+          type: object
+          description: Freeform object for any product-specific attributes.
+    ProductResponse:
+      required:
+        - items
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        next_page_token:
+          type: string
+          example: "20"
+        page_size:
+          type: number
+          example: 10
+        total_elements:
+          type: number
+          example: 10
+        next_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/products?limit=10&page_token=20"
+        previous_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/product?limit=10&page_token=10"
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "102.04"
+        owner:
+          $ref: '#/components/schemas/ProductGroupIdentifier'
+        name:
+          type: string
+          example: "Exemplar"
+        description:
+          type: string
+          example: This is an example Product.
+          description: The description of the Product
+        long_description:
+          type: string
+          example: This product is an example Product that can be used as a basis for creating other Products.
+          description: The long description of the Product that supports markdown.
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        labels:
+          type: array
+          items:
+            type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "102.04-search"
+              type:
+                $ref: '#/components/schemas/ComponentType'
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityScopeIdentifier'
+        configurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigurationTypeIdentifier'
+        selection:
+          $ref: '#/components/schemas/SelectionResponse'
+        externalization:
+          $ref: '#/components/schemas/ExternalizationOptions'
+        pricing:
+          type: object
+        additional_attributes:
+          type: object
+          description: Freeform object for any product-specific attributes.
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    ProductStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+      example: ACTIVE
+    ProductComponent:
+      required:
+        - id
+        - type
+        - name
+        - owner
+        - metadata
+      type: object
+      properties:
+        id:
+          type: string
+          example: "a992ea55-38be-4463-bdd3-4b862aad59a2"
+        type:
+          $ref: '#/components/schemas/ComponentType'
+        name:
+          type: string
+          example: "Cars Search API"
+        owner:
+          $ref: '#/components/schemas/ProductGroupIdentifier'
+        api_policy:
+          $ref: '#/components/schemas/ApiPolicy'
+        metadata:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityScopeIdentifier'
+        configuration:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigurationTypeIdentifier'
+        backstage:
+          $ref: '#/components/schemas/Backstage'
+    ProductComponentWithConfiguration:
+      required:
+        - id
+        - type
+        - name
+        - owner
+        - metadata
+      type: object
+      properties:
+        id:
+          type: string
+          example: "a992ea55-38be-4463-bdd3-4b862aad59a2"
+        type:
+          $ref: '#/components/schemas/ComponentType'
+        name:
+          type: string
+          example: "Cars Search API"
+        owner:
+          $ref: '#/components/schemas/ProductGroupIdentifier'
+        api_policy:
+          $ref: '#/components/schemas/ApiPolicyResponse'
+        metadata:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityScopeIdentifier'
+        configuration:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigurationResponse'
+        backstage:
+          $ref: '#/components/schemas/Backstage'
+    ProductComponentRequest:
+      required:
+        - id
+        - type
+        - name
+        - owner
+        - api_spec
+        - backstage
+        - details
+      type: object
+      properties:
+        id:
+          type: string
+          example: "a992ea55-38be-4463-bdd3-4b862aad59a2"
+        type:
+          $ref: '#/components/schemas/ComponentType'
+        name:
+          type: string
+          example: "Cars Search API"
+        owner:
+          type: string
+          example: "102.0"
+        api_spec:
+          type: string
+          example: |
+            openapi: 3.0.0
+              info:
+                description: etc...
+        scopes:
+          type: array
+          items:
+            type: string
+            example: control-plane.product-catalog.write
+        configuration:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigurationType'
+        backstage:
+          $ref: '#/components/schemas/Backstage'
+        details:
+          $ref: '#/components/schemas/Details'
+    ProductComponentResponse:
+      required:
+        - items
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductComponent'
+        next_page_token:
+          type: string
+          example: "20"
+        page_size:
+          type: number
+          example: 10
+        total_elements:
+          type: number
+          example: 10
+        next_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/components?limit=10&page_token=20"
+        previous_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/components?limit=10&page_token=10"
+    ProductComponentResponseWithDetails:
+      required:
+        - items
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductComponentWithConfiguration'
+        next_page_token:
+          type: string
+          example: "20"
+        page_size:
+          type: number
+          example: 10
+        total_elements:
+          type: number
+          example: 10
+        next_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/components?limit=10&page_token=20"
+        previous_page_url:
+          type: string
+          example: "https://platform-product-catalog.rcp.controlplane.test.exp-aws.net/v1beta/components?limit=10&page_token=10"
+    ComponentType:
+      type: string
+      enum:
+        - OPEN_API
+        - GRAPHQL
+        - GENERIC
+      example: OPEN_API
+    BackstageKind:
+      type: string
+      enum:
+        - API
+    SecurityScheme:
+      type: object
+      properties:
+        scheme:
+          type: string
+          example: oauth2
+        flow:
+          type: string
+          example: client_credentials
+        scope:
+          type: string
+          example: control-plane.product-catalog.write
+    Paths:
+      type: array
+      items:
+        $ref: '#/components/schemas/Path'
+    Path:
+      type: object
+      properties:
+        id:
+          type: string
+          example: search
+        url:
+          type: string
+          example: /search
+        scope:
+          type: string
+          example: control-plane.product-catalog.write
+    Servers:
+      type: object
+      properties:
+        LAB:
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              example: https://exemplar-capability.rcp.controlplane.test.exp-aws.net/v1
+        PROD:
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              example: https://exemplar-capability.rcp.controlplane.prod.exp-aws.net/v1
+        SECURE:
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              example: https://exemplar-capability.rcp.controlplane.prod-p.exp-aws.net/v1
+    Metadata:
+      type: object
+      properties:
+        create_timestamp:
+          type: string
+          format: date-time
+        update_timestamp:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          example: your-account-guid
+        updated_by:
+          type: string
+          example: some-other-account-guid
+    ApiPolicy:
+      required:
+        - key
+      type: object
+      properties:
+        key:
+          type: string
+    ApiPolicyResponse:
+      required:
+        - key
+      type: object
+      properties:
+        key:
+          type: string
+        spec:
+          type: object
+          properties:
+            metadata:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+            spec:
+              type: object
+              properties:
+                api:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    domain:
+                      type: string
+                    capabilities:
+                      type: array
+                      items:
+                        type: string
+                    origins:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Origins'
+                    base_path:
+                      type: string
+                    paths:
+                      $ref: '#/components/schemas/ApiPolicyPaths'
+                variants:
+                  properties:
+                    name:
+                      type: string
+                    capabilities:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/VariantCapabilities'
+                    exposures:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ApiPolicyExposures'
+        labels:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    Origins:
+      type: object
+      properties:
+        LAB:
+          type: object
+        PROD:
+          type: object
+    ApiPolicyPaths:
+      type: object
+    VariantCapabilities:
+      type: object
+    ApiPolicyExposures:
+      type: object
+      properties:
+        type:
+          type: string
+        root:
+          type: string
+    IdentityScope:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          example: my-group.my-feature.my-action
+          pattern: '^[a-z]+(-[a-z]+)*\.[a-z]+(-[a-z]+)*\.[a-z]+(-[a-z]+)*$'
+        description:
+          type: string
+          example: This scope is required to do the action with the feature!
+        internal_only:
+          type: boolean
+          readOnly: true
+          default: false
+        enabled:
+          type: boolean
+          readOnly: true
+        type:
+          type: string
+          readOnly: true
+          default: "api"
+        identifier:
+          type: string
+          readOnly: true
+    IdentityScopeIdentifier:
+      type: object
+      properties:
+        identifier:
+          type: string
+          example: 00000000-0000-0000-0000-000000000000
+          description: The id of the scope.
+        name:
+          type: string
+          example: my-group.my-feature.my-action
+          description: The name of the scope.
+    ConfigurationResponse:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+        schema:
+          $ref: '#/components/schemas/ConfigurationResponseType'
+    DomainConfigurationType:
+      required:
+        - schema
+      type: object
+      properties:
+        schema:
+          $ref: '#/components/schemas/ConfigurationRequestType'
+    ConfigurationType:
+      required:
+        - schema
+        - default
+      type: object
+      properties:
+        schema:
+          $ref: '#/components/schemas/ConfigurationRequestType'
+        default:
+          type: array
+          description: Default config values.
+          items:
+            required:
+              - spec
+            type: object
+            properties:
+              spec:
+                type: object
+                description: JSON Schema defining the default values for the corresponding key schema.
+              labels:
+                type: object
+                additionalProperties:
+                  type: "string"
+              status:
+                type: string
+                example: STAGED
+              key_suffix:
+                type: string
+                example: RedSite
+    ConfigurationRequestType:
+      required:
+        - key
+        - spec
+      type: object
+      properties:
+        key:
+          type: string
+          example: control_plane/v5/product_catalog_test
+        spec:
+          type: object
+          description: JSON Schema defining the configuration schema. See https://platform-configuration-service.rcp.controlplane.test.exp-aws.net/webjars/swagger-ui/index.html?url=/apis/v1alpha1/entity/api-docs?group%3DALL#/SystemV1Type/createSystemV1Type
+        labels:
+          type: object
+          additionalProperties:
+            type: "string"
+        status:
+          type: string
+    ConfigurationResponseType:
+      required:
+        - schema
+      type: object
+      properties:
+        schema:
+          required:
+            - key
+            - spec
+          type: object
+          properties:
+            key:
+              type: string
+              example: control_plane/v5/product_catalog_test
+            spec:
+              type: object
+              description: JSON Schema defining the configuration schema. See https://platform-configuration-service.rcp.controlplane.test.exp-aws.net/webjars/swagger-ui/index.html?url=/apis/v1alpha1/entity/api-docs?group%3DALL#/SystemV1Type/createSystemV1Type
+            labels:
+              type: object
+              additionalProperties:
+                type: "string"
+            status:
+              type: string
+    Backstage:
+      required:
+        - name
+        - kind
+      type: object
+      properties:
+        name:
+          type: string
+          example: Cars-Search-OpenAPI
+        kind:
+          $ref: '#/components/schemas/BackstageKind'
+        namespace:
+          type: string
+          example: default
+    Details:
+      required:
+        - rate_limit
+        - domain
+        - capabilities
+      type: object
+      properties:
+        rate_limit:
+          type: object
+          properties:
+            value:
+              type: number
+              example: 60
+            duration:
+              type: string
+              enum:
+                - second
+                - minute
+                - hour
+                - day
+        domain:
+          type: string
+          example: Cars
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: [Search]
+        version:
+          type: string
+          example: v1
+        exposure_url:
+          type: string
+          example: cars
+        auth:
+          $ref: '#/components/schemas/SecurityScheme'
+        paths:
+          $ref: '#/components/schemas/Paths'
+        servers:
+          $ref: '#/components/schemas/Servers'
+    ConfigurationTypeIdentifier:
+      required:
+        - key
+      type: object
+      properties:
+        key:
+          type: string
+          example: exemplar/v1/exemplar-config
+    Selection:
+      required:
+        - icon
+        - type
+      type: object
+      properties:
+        icon:
+          type: string
+          description: The icon to display on the Product card.
+          example: EDGS_TOKEN
+        type:
+          type: string
+          enum:
+            - DECLARATIVE_FORM
+            - SUB_APP_FULL_PAGE
+          description: The type of selection configuration to use.
+          example: DECLARATIVE_FORM
+        domain_workflows:
+          $ref: '#/components/schemas/DomainWorkflow'
+        configuration:
+          $ref: '#/components/schemas/SelectionConfiguration'
+    SelectionConfiguration:
+      type: object
+      properties:
+        selection_schema:
+          $ref: '#/components/schemas/SelectionSchema'
+        app_name:
+          type: string
+          description: "[SUB_APP_FULL_PAGE only] The name of the front end bundle's package.json name."
+          example: "exemplar-console-ui"
+    SelectionResponse:
+      required:
+        - icon
+        - configuration
+      type: object
+      properties:
+        icon:
+          type: string
+          description: The icon to display on the Product card.
+          example: EDGS_TOKEN
+        configuration:
+          $ref: '#/components/schemas/SelectionConfigurationResponse'
+    DomainWorkflow:
+      required:
+        - pre_selection
+        - post_configuration
+        - approval
+        - post_approval
+        - post_selection
+      type: object
+      properties:
+        pre_selection:
+          type: string
+          description: The EGLOM workflow id to initiate pre selection
+          example: preSel123
+        pre_configuration:
+          type: string
+          description: The EGLOM workflow id to initiate pre configuration
+          example: preConf123
+        approval:
+          type: string
+          description: The EGLOM workflow id to initiate on approval
+          example: approval123
+        post_approval:
+          type: string
+          description: The EGLOM workflow id to initiate post approval
+          example: postApp123
+        post_selection:
+          type: string
+          description: The EGLOM workflow id to initiate post selection
+          example: postSelection123
+    SelectionConfigurationResponse:
+      required:
+        - type
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - DECLARATIVE_FORM
+            - SUB_APP_FULL_PAGE
+          description: The type of selection configuration to use.
+          example: DECLARATIVE_FORM
+        domain_workflows:
+          $ref: '#/components/schemas/DomainWorkflow'
+        app_name:
+          type: string
+          description: "[SUB_APP_FULL_PAGE only] The name of the front end bundle's package.json name."
+          example: "exemplar-console-ui"
+    SelectionSchema:
+      required:
+        - name
+        - input_data
+      type: object
+      description: "[DECLARATIVE_FORM only] The input data set for the declarative form."
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        input_data:
+          type: object
+        default_submit_workflow_id:
+          type: string
+    ExternalizationOptions:
+      type: object
+      properties:
+        is_open_for_all:
+          type: boolean
+        is_approval_required:
+          type: boolean
+        partner_business_types:
+          type: array
+          items:
+            type: string
+        partner_tier:
+          type: string
+        partner_standing_status:
+          type: string
+    ComponentIncludeType:
+      type: string
+      enum:
+        - configuration
+        - api_policy
+      example: configuration
+    ProductsIncludeType:
+      type: string
+      enum:
+        - owner
+      example: owner
+    Error:
+      description: The object used the describe an error, containing both human-readable and in a machine-readable information.
+      title: Error
+      type: object
+      properties:
+        type:
+          description: >
+            A URI reference, compliant with the standard EG error type format, which identifies the error type.
+            It provides a machine-readable identifier for the error type.
+            The error type will be aligned with the HTTP status code of the response.
+            The URI can either be absolute or relative to the API's base URI.
+            When dereferenced, it can also provide human-readable documentation for the error type.
+          type: string
+          format: uri
+          example: https://apis.expediagroup.com/errors/common/invalid-argument
+        detail:
+          description: A human-readable explanation of the error, specific to this error occurrence.
+          type: string
+          example: The request failed because one or many input values are invalid. Please see the causes for more details.
+        causes:
+          description: An array of cause objects, that identify the specific causes of the error.
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorCause"
+        timestamp:
+          description: The ISO 8601 time that the error occurred.
+          type: string
+          example: "2021-08-10T04:10:14.278+00:00"
+        path:
+          description: The request path that the error occurred on.
+          type: string
+          example: /v1beta/products/1111.12
+        status:
+          description: The response status code for the error.
+          type: integer
+          example: 400
+        error:
+          description: The response status name for the error.
+          type: string
+          example: Bad Request
+        requestId:
+          description: The dynamic request identifier.
+          type: string
+          example: "10aaa823-35"
+    NotFoundError:
+      description: The object used the describe an error, containing both human-readable and in a machine-readable information.
+      title: Error
+      type: object
+      properties:
+        type:
+          description: >
+            A URI reference, compliant with the standard EG error type format, which identifies the error type.
+            It provides a machine-readable identifier for the error type.
+            The error type will be aligned with the HTTP status code of the response.
+            The URI can either be absolute or relative to the API's base URI.
+            When dereferenced, it can also provide human-readable documentation for the error type.
+          type: string
+          format: uri
+          example: https://apis.expediagroup.com/errors/common/resource-not-found
+        detail:
+          description: A human-readable explanation of the error, specific to this error occurrence.
+          type: string
+          example: The request failed because the identifier provided is invalid. Please see the causes for more details.
+        causes:
+          description: An array of cause objects, that identify the specific causes of the error.
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorCause"
+        timestamp:
+          description: The ISO 8601 time that the error occurred.
+          type: string
+          example: "2021-08-10T04:10:14.278+00:00"
+        path:
+          description: The request path that the error occurred on.
+          type: string
+          example: /v1beta/components/a992ea55-38be-4463-bdd3-4b862aad59a2
+        status:
+          description: The response status code for the error.
+          type: integer
+          example: 404
+        error:
+          description: The response status name for the error.
+          type: string
+          example: Not Found
+        requestId:
+          description: The dynamic request identifier.
+          type: string
+          example: "10aaa823-35"
+
+      required:
+        - type
+        - detail
+        - timestamp
+        - path
+        - status
+        - error
+        - requestId
+    UnauthorizedError:
+      description: The object used the describe an unauthorized error, containing both human-readable and in a machine-readable information.
+      title: Unauthorized Error
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://apis.expediagroup.com/errors/common/unauthenticated
+        detail:
+          type: string
+          example: The request failed because the client is not correctly authenticated.
+    ForbiddenError:
+      description: The object used the describe a forbidden error, containing both human-readable and in a machine-readable information.
+      title: Forbidden Error
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://apis.expediagroup.com/errors/common/permission-denied
+        detail:
+          type: string
+          example: The request failed because although the client is correctly authenticated, the client is not authorized to perform this action.
+    ErrorCause:
+      description: The object used to describe a cause for an error, containing both human-readable and in a machine-readable information.
+      title: Cause
+      type: object
+      properties:
+        type:
+          description: >
+            A URI reference, compliant with the standard EG error type format, which identifies the cause type.
+            It provides a machine-readable identifier for the cause type.
+            The cause type will be aligned with the error type.
+            The URI can either be absolute or relative to the API's base URI.
+            When dereferenced, it provides human-readable documentation for the cause type.
+          type: string
+          format: uri
+          example: "https://apis.expediagroup.com/errors/common/invalid-number"
+        detail:
+          description: A human-readable explanation of the cause, specific to this cause occurrence.
+          type: string
+          example: "The number of results per page you provided ('NotANumber') is invalid. Please provide a valid integer value between 1 and 100."
+        location:
+          description: |
+            The location of the element in the request that identifies this specific cause. When specified, the `name` will be specified and when applicable, the `value` as well. Can be one of:
+            * `HEADER` - When an error has been identified in one of the request headers.
+            * `PATH` - When an error has been identified in one of the path parameters.
+            * `QUERY` - When an error has been identified in one of the query parameters.
+            * `BODY` - When an error has been identified in the request body.
+          type: string
+          enum:
+            - HEADER
+            - PATH
+            - QUERY
+            - BODY
+          example: QUERY
+        name:
+          description: |
+            The name of the element for this cause. When specified, the `location` will be specified and when applicable, the `value` as well. This name is a function of the value of the `location` property:
+              * When the `location` is set to `HEADER`, this will be the name of the request header (e.g. `Content-Type`).
+              * When the `location` is set to `PATH`, this will be the name of the path parameter (e.g. in a path defined as `/users/{user_id}`, the value would be `user_id`).
+              * When the `location` is set to `QUERY`, this will be the name of the query string parameter (e.g. `offset`).
+              * When the `location` is set to `BODY`, this will one of the field names specified in the body of the request.
+                * For a top level field, it should only be set to the field name (e.g. `firstName`).
+                * For a field in a nested object, it may contain the path to reach the field (e.g. `address.city`).
+                * For a field in an object part of collection, it may contain the index in the collection (e.g. `permissions[0].name`).
+          type: string
+          example: "results_per_page"
+        value:
+          description: >
+            A string representation of the erroneous value of the element identified in `name`, perceived to be the cause of the error.
+            When specified, the `location` and `name` should be specified as well.
+            This value may be omitted in cases where it cannot be provided (e.g. missing require field), or the erroneous value cannot be represented as a string.
+          type: string
+          example: "NotANumber"
+      required:
+        - type
+        - detail
+  responses:
+    BadRequest:
+      description: Errors in the request URL
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UnauthorizedError"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ForbiddenError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NotFoundError"
+    UnprocessableEntity:
+      description: Errors in the request payload
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Internal service error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  securitySchemes:
+    EgTokenAuth:
+      type: oauth2
+      description: This api uses Oauth2 with EGToken scheme
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity-authorization-server.us-west-2.test.eguser.expedia.com/api/v1/token?provider=eg-identity&format=jwt-principal&grant_type=client_credentials
+          scopes:
+            "control-plane.product-catalog.read": Read products
+            "control-plane.product-catalog.write": Write products
+            "control-plane.product-catalog.admin": Delete products
